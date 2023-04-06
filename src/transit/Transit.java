@@ -1,10 +1,15 @@
 package transit;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+
 
 /**
  * This class contains methods which perform various operations on a layered linked
  * list to simulate transit
+ * 
+ * Dheeptha Meruva 
  * 
  * @author Ishaan Ivaturi
  * @author Prince Rawal
@@ -47,8 +52,78 @@ public class Transit {
 	 */
 	public void makeList(int[] trainStations, int[] busStops, int[] locations) {
 
-	    // UPDATE THIS METHOD
+		this.trainZero= new TNode();
+
+		TNode zeroBus = new TNode();
+		TNode zeroLoc = new TNode();
+		
+		this.trainZero.setDown(zeroBus);
+		zeroBus.setDown(zeroLoc);
+		
+		TNode prevBus = zeroBus;
+		TNode nextBus = null;
+
+		TNode prevLoc = zeroLoc;
+		TNode nextLoc = null;
+		 
+		TNode nextTrain = null;
+		TNode prevTrain = this.trainZero;
+		
+		
+		int bIndex= -1;
+		int tIndex = -1;
+		
+	
+		
+		for(int i=0;i<locations.length;i++) {
+			
+			nextLoc= new TNode(locations[i]);
+			prevLoc.setNext(nextLoc);
+
+			bIndex = existingC(locations[i],busStops);
+
+			if(bIndex > -1) 
+			{
+				
+				nextBus = new TNode(busStops[bIndex]);
+				
+				prevBus.setNext(nextBus);
+				nextBus.setDown(nextLoc);
+
+				prevBus = nextBus;
+				
+				tIndex= existingC (locations[i],trainStations);
+
+				if(tIndex > -1) 
+				{
+					nextTrain = new TNode(trainStations[tIndex]);
+					
+					prevTrain.setNext(nextTrain);
+					nextTrain.setDown(nextBus);
+
+					prevTrain = nextTrain;
+					
+				}	
+			}
+			
+			prevLoc = nextLoc;
+		}
+		
 	}
+		
+	int existingC(int value,int values[]) 
+	{
+		
+		for(int j=0;j<values.length;j++) 
+		{
+			if(values[j]==value) 
+			{
+				return j;
+			}
+		}
+		return -1;
+	}		
+	
 	
 	/**
 	 * Modifies the layered list to remove the given train station but NOT its associated
@@ -57,7 +132,18 @@ public class Transit {
 	 * @param station The location of the train station to remove
 	 */
 	public void removeTrainStation(int station) {
-	    // UPDATE THIS METHOD
+		TNode currents = trainZero.getNext();
+		TNode prevStops=trainZero;
+
+		while(currents!=null)
+		{
+			if (currents.getLocation()==station)
+			{
+				prevStops.setNext(currents.getNext());
+			}
+			prevStops = currents;
+			currents = currents.getNext();
+		}
 	}
 
 	/**
@@ -67,7 +153,29 @@ public class Transit {
 	 * @param busStop The location of the bus stop to add
 	 */
 	public void addBusStop(int busStop) {
-	    // UPDATE THIS METHOD
+		TNode zerosBusStop = trainZero.getDown();
+		TNode current = zerosBusStop;
+		TNode downStop = new TNode();
+
+		while(current.getLocation()<busStop){
+		if (current.getNext().getLocation()>busStop)
+		{
+
+		//tNode start, int end dwn = walkTo(current.getDown(), busStop);
+		TNode currentLoc = current.getDown();
+		for(; currentLoc!=null&&currentLoc.getLocation()<busStop;currentLoc=currentLoc.getNext());
+		if (currentLoc.getLocation() == busStop)
+		{
+			downStop = currentLoc;
+		}
+
+		TNode newBus = new TNode(busStop, current.getNext(), downStop);
+		current.setNext(newBus);
+		}
+
+
+		current=current.getNext();
+}
 	}
 	
 	/**
@@ -76,11 +184,49 @@ public class Transit {
 	 * 
 	 * @param destination An int representing the destination
 	 * @return
+	 * 
+	 * 
 	 */
 	public ArrayList<TNode> bestPath(int destination) {
+		ArrayList<TNode> pathTracker = new ArrayList<>();
 
-	    // UPDATE THIS METHOD
-	    return null;
+
+		//ArrayList<TNode> trains=mapTo(trainZero, destination);
+		ArrayList<TNode> search1 = new ArrayList<>();
+		TNode firstLocs = trainZero;
+		for(; firstLocs!=null && firstLocs.getLocation() <= destination; firstLocs=firstLocs.getNext())
+		{
+			search1.add(firstLocs);
+		}
+		ArrayList<TNode> trains = search1; 
+
+		//ArrayList<TNode> busses=mapTo(trains.get(trains.size()-1).getDown(), destination);
+
+		ArrayList<TNode> search2 = new ArrayList<>();
+		TNode secondLocs = trains.get(trains.size()-1).getDown();
+		for(; secondLocs!=null && secondLocs.getLocation() <= destination; secondLocs =secondLocs.getNext())
+		{
+			search2.add(secondLocs);
+		}
+		ArrayList<TNode> busses = search2; 
+
+		//ArrayList<TNode> locs=mapTo(busses.get(busses.size()-1).getDown(), destination);
+		ArrayList<TNode> search3 = new ArrayList<>();
+		TNode thirdLocs = busses.get(busses.size()-1).getDown(); 
+		for(; thirdLocs!=null && thirdLocs.getLocation() <= destination; thirdLocs =thirdLocs.getNext())
+		{
+			search3.add(thirdLocs);
+		}
+		ArrayList<TNode> locs = search3; 
+
+
+		
+		pathTracker.addAll(trains);
+		pathTracker.addAll(busses);
+		pathTracker.addAll(locs);
+
+		return pathTracker;
+	   
 	}
 
 	/**
@@ -91,8 +237,91 @@ public class Transit {
 	 */
 	public TNode duplicate() {
 
-	    // UPDATE THIS METHOD
-	    return null;
+		TNode deepTrain = new TNode();
+		TNode midtrainT= deepTrain; 
+
+		for(TNode x=trainZero;x!=null;x=x.getNext())
+		{
+			midtrainT.setDown(x.getDown());
+			if(x.getNext()!=null)
+			{
+				TNode supertrain = new TNode(x.getNext().getLocation());
+				midtrainT.setNext(supertrain);
+				midtrainT=supertrain; 
+			}
+		}
+
+		TNode deepBus = new TNode();
+		TNode midtrainB= deepBus; 
+
+		for(TNode x=trainZero.getDown();x!=null;x=x.getNext())
+		{
+			midtrainB.setDown(x.getDown());
+			if(x.getNext()!=null)
+			{
+				TNode supertrain = new TNode(x.getNext().getLocation());
+				midtrainB.setNext(supertrain);
+				midtrainB=supertrain; 
+			}
+		}
+
+		TNode deepWalk= new TNode();
+		TNode midtrainW=deepWalk; 
+
+		for(TNode x=trainZero.getDown().getDown();x!=null;x=x.getNext())
+		{
+			midtrainW.setDown(x.getDown());
+			if(x.getNext()!=null)
+			{
+				TNode supertrain = new TNode(x.getNext().getLocation());
+				midtrainW.setNext(supertrain);
+				midtrainW=supertrain; 
+			}
+		}
+
+		deepTrain.setDown(deepBus);
+		deepBus.setDown(deepWalk);
+
+		for(TNode x=deepTrain;x!=null;x=x.getNext())
+		{
+			for(TNode b=deepBus;b!=null;b=b.getNext())
+			{
+				if(x.getLocation()==b.getLocation())
+				{
+					x.setDown(b);
+				}
+			}
+		}
+
+		for(TNode x=deepBus;x!=null;x=x.getNext())
+		{
+			for(TNode b=deepWalk;b!=null;b=b.getNext())
+			{
+				if(x.getLocation()==b.getLocation())
+				{
+					x.setDown(b);
+				}
+			}
+		}
+
+		return deepTrain; 
+		
+	}
+
+	private TNode searchingN(TNode n,int location){
+			
+		TNode currNode = n;
+		//Iterate list till next is null and location is less than search location
+		while(currNode != null ) 
+		{
+			
+			if(currNode.getLocation() == location) 
+			{
+				return currNode;
+			}
+			currNode = currNode.getNext();
+		}
+		return null;
 	}
 
 	/**
@@ -103,7 +332,37 @@ public class Transit {
 	 */
 	public void addScooter(int[] scooterStops) {
 
-	    // UPDATE THIS METHOD
+		
+		TNode zBus = this.trainZero.getDown();
+		TNode lZero = this.trainZero.getDown().getDown();
+		
+		TNode zeroScoots = new TNode();
+		zeroScoots.setDown(lZero);
+		zBus.setDown(zeroScoots);
+		
+		TNode prevScoots= zeroScoots;
+		
+		
+		
+		
+		for(int i=0 ;i <scooterStops.length;i++ ) 
+		{
+			
+			TNode sNode = new TNode(scooterStops[i]);
+			prevScoots.setNext(sNode);
+			
+			TNode lNode = searchingN(lZero,scooterStops[i]);
+			sNode.setDown(lNode);
+			
+			TNode bNode = searchingN(zBus,scooterStops[i]);
+			if(bNode != null) {
+				bNode.setDown(sNode);
+			}
+			
+			prevScoots = sNode;
+
+		}
+
 	}
 
 	/**
